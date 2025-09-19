@@ -1,0 +1,89 @@
+﻿@page "/stafflist"
+
+@using FinalOOProject.Services
+@using FinalOOProject.Data
+@inject StaffService staffService
+@inject NavigationManager navigationManager
+
+<div id="built-page">
+<h1>Staff Directory</h1>
+
+@if (staffList == null)
+{
+	<p><em>Loading...</em></p>
+}
+else
+{
+	<button class="btn btn-primary user-button" @onclick="AddNewstaff">Add New Staff Member</button>
+	
+	<table class="table table-striped user-table">
+		<thead>
+			<tr>
+				<th>First Name</th>
+				<th>Last Name</th>
+				<th>Email</th>
+				<th>Number</th>
+				<th></th>
+			</tr>
+		</thead>
+
+		<tbody>
+			@foreach (var staff in staffList)
+			{
+				<tr>
+					<td>@staff.Name</td>
+					<td>@staff.StaffLname</td>
+					<td>@staff.StaffEmail</td>
+					<td>@staff.Number</td>
+					<td>
+						<button class="btn btn-warning" @onclick=@(() => Updatestaff(staff))>Update</button>
+						<button class="btn btn-danger" @onclick=@(() => Deletestaff(staff))>Fire</button>
+					</td>
+				</tr>
+			}
+		</tbody>
+	</table>
+}
+</div>
+
+@code {
+	/*
+	 * Creates a Enumerable list of staff members, for displaying on the page
+	 */
+	private IEnumerable<StaffInfo> staffList;
+	protected override async Task OnInitializedAsync()
+	{
+		staffList = await staffService.GetXAsync();
+	}
+		
+	/*
+	 * When the add staff button is pressed, this will navigate the user to the add/update page
+	 */
+	public void AddNewstaff()
+	{
+		navigationManager.NavigateTo($"addstaffupdate");
+	}
+		
+	/*
+	 * When the edit button is pressed, the user will be navigated to the update page, 
+	 * with the specific staff member's id as a parameter
+	 * 
+	 * @param A staff member's info
+	 */
+	public void Updatestaff(StaffInfo staffInfo)
+	{
+		navigationManager.NavigateTo($"updatestaff/{staffInfo.Id}");
+	}
+		
+	/*
+	 * When the delete button is pressed, it will delete the staff member from the list
+	 * 
+	 * @param A staff member's info
+	 */
+	public async void Deletestaff(StaffInfo staffInfo)
+	{
+		await staffService.DeleteXAsync(staffInfo.Id);
+		staffList = await staffService.GetXAsync();
+		this.StateHasChanged();
+	}
+}

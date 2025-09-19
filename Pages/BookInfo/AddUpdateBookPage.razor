@@ -1,0 +1,158 @@
+﻿@page "/addupdatebook"
+@page "/updatebook/{Id:int}"
+
+@using FinalOOProject.Services
+@using FinalOOProject.Data
+@inject BookService bookService
+@inject NavigationManager navigationManager
+
+<div id="built-page">
+	<h1>Add or Update Book</h1>
+	<div class="">
+		<div class="user-row">
+			<div class="user-column">
+				<label class="">Book Name:</label>
+				<input type="text" @bind="bookName" class="form-control" placeholder="Do Androids Dream of Electric Sheep?" />
+			</div>
+			<div class="user-column">
+				<label class="">Author:</label>
+				<input type="text" @bind="bookAuthor" class="form-control" placeholder="Philip K. Dick" />
+			</div>		
+		</div>
+		<div class="user-row">
+			<div class="user-column">
+				<label class="">Quality:</label>
+				<input type="text" @bind="bookQuality" class="form-control" placeholder="New" />
+			</div>
+			<div class="user-column">
+				<label class="">Cost to Replace:</label>
+				<input type="text" @bind="bookCostStr" class="form-control" placeholder="0.00" />
+			</div>
+		</div>
+		<div class="user-row">
+			<div class="user-column">
+				<label class="">Description:</label>
+				<input type="text" @bind="bookDesc" class="form-control" placeholder="Optional" />
+			</div>
+		</div>
+		<div class="user-row">
+			<div class="user-column">
+				<label class="">Tags:</label>
+				<input type="text" @bind="bookTags" class="form-control" placeholder="Science Fiction, Cyberpunk..." />
+			</div>
+		</div>
+		<div class="user-row has-button">
+			<button type="submit" class="btn btn-primary button user-button" @onclick="AddBookInfo">Submit</button>
+			<button type="submit" class="btn btn-primary button user-button" @onclick="BackToList">Back</button>
+		</div>
+	</div>
+</div>
+
+@code {
+	/*
+	 * Parameter for editing a specific book
+	 */
+	[Parameter]
+	public int Id { get; set; }
+
+	/*
+	 * Empty variables that are bound to the input boxes
+	 */
+	private int bookId = 0;
+	private string bookName = "";
+	private string bookAuthor = "";
+	private decimal bookCost = 0;
+	private string bookCostStr = "";
+	private string bookQuality = "";
+	private bool bookLentOut = false;
+	private string bookDesc = "";
+	private string bookTags = "";
+
+	/*
+	 * Code that sets the boxes to the parameter's values
+	 * If the bookId is 0 (new book), then no boxes will be filled
+	 */
+	protected async override void OnInitialized()
+	{
+		base.OnInitialized();
+		bookId = Id;
+		if (bookId > 0)
+		{
+			var response = await bookService.GetXAsync(bookId);
+			bookName = response.Name;
+			bookAuthor = response.BookAuthor;
+			bookCost = response.BookCost;
+			bookCostStr = bookCost.ToString();
+			bookQuality = response.BookQuality;
+			bookDesc = response.BookDesc;
+			bookTags = response.BookTags;
+			if (response.BookLentOut == 1)
+			{
+				bookLentOut = true;
+			}
+			else
+			{
+				bookLentOut = false;
+			}
+			this.StateHasChanged();
+		}
+	}
+
+	/*
+	 * Creates a new book, or updates an existing one
+	 * Upon successful creation, it will display an alert notifying the user of success
+	 */
+	public async void AddBookInfo()
+	{
+		var book = new BookInfo();
+
+		if (DataValidator.CheckBookEntry(bookName, bookAuthor, bookQuality, bookTags, bookCostStr))
+		{ 	
+			bookCost = decimal.Parse(bookCostStr);
+
+			book.Id = bookId;
+			book.Name = bookName;
+			book.BookAuthor = bookAuthor;
+			book.BookCost = bookCost;
+			book.BookQuality = bookQuality;
+			book.BookDesc = bookDesc;
+			book.BookTags = bookTags;
+			if(bookLentOut == true)
+			{
+				book.BookLentOut = 1;
+			}
+			else
+			{
+				book.BookLentOut = 0;
+			}
+
+			var response = await bookService.AddUpdateXAsync(book);
+			if (response)
+			{
+				if (bookId == 0)
+				{
+					await App.Current.MainPage.DisplayAlert("Saved", "Save Success", "OK");
+					BackToList();
+				}
+				else
+				{
+					await App.Current.MainPage.DisplayAlert("Updated", "Update Success", "OK");
+					BackToList();
+				}
+			}
+			else
+			{
+				await App.Current.MainPage.DisplayAlert("Saved", "Save File", "OK");
+				BackToList();
+			}
+		}
+	}
+
+	/*
+	 * Redirects the current page to the list page, once a book is added or removed
+	 */
+	public void BackToList()
+	{
+		navigationManager.NavigateTo("booklist");
+	}
+}

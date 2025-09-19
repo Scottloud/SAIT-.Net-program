@@ -1,0 +1,47 @@
+﻿@page "/"
+@using SQLite;
+@using FinalOOProject.Services
+@using FinalOOProject.Data
+
+<h1 id="main-title">DeweyDash</h1>
+
+<p>Welcome to your new library assistant.</p>
+<p>DeweyDash is design to help with library administration by providing a central source of information about the library's contents, its staff, and its customers.</p>
+<p>On the navbar to the right, you'll be able to manage your collection, as well as access a search function to help your customers find what they're looking for. 
+	There are also links to the staff directory and customer database.</p>
+
+<button class="btn btn-primary" @onclick="@PopulateDatabase">Click to Populate Demo Database</button>
+
+<div class="warning">
+	<p>Please Note: At this time, DeweyDash is only set up to work in Canada. International phone numbers or addresses can not be saved to the database.</p>
+</div>
+
+
+
+@code {
+    private void PopulateDatabase()
+    {
+        var connectionString = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), @"LibraryManager.db3");
+        var connection = new SQLiteConnection(connectionString);
+
+        var initSql = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "init.sql"));
+
+        // Split the string into an array of SQL commands using semicolon as delimiter
+        var commands = initSql.Split(';');
+
+        // Execute each SQL command in the array
+        foreach (var command in commands)
+        {
+            try
+            {
+                connection.Execute(command);
+            }
+            catch (SQLiteException ex) when (ex.Message == "not an error")
+            {
+                continue;
+            }
+        }
+
+        App.Current.MainPage.DisplayAlert("Demo Data Added", "Press to continue", "Ok");
+    }
+}

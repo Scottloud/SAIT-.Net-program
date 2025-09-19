@@ -1,0 +1,142 @@
+﻿@page "/booklist"
+
+@using FinalOOProject.Services
+@using FinalOOProject.Data
+@inject BookService bookService
+@inject NavigationManager navigationManager
+
+<div id="built-page">
+	<h1>Collection</h1>
+
+
+@if (bookList == null)
+{
+	<p><em>Loading...</em></p>
+}
+else
+{
+	<button class="btn btn-primary user-button" @onclick="AddNewBook">Add to Collection</button>
+	<div class="user-table">
+		<h4>Active</h4>
+		<table class="table table-striped">
+			<thead>
+				<tr>
+					<th>Name</th>
+					<th>Author</th>
+					<th>Quality</th>
+					<th>Cost</th>
+					<th></th>
+				</tr>
+			</thead>
+
+			<tbody>
+				@foreach (var book in bookList)
+				{
+					if (book.BookLentOut == 0)
+					{
+						<tr>
+							<td>@book.Name</td>
+							<td>@book.BookAuthor</td>
+							<td>@book.BookQuality</td>
+							<td>@book.BookCost</td>
+							<td>
+								<button class="btn btn-info" @onclick=@(() => LendBook(book))>Lend</button>
+								<button class="btn btn-warning" @onclick=@(() => UpdateBook(book))>Edit</button>
+								<button class="btn btn-danger" @onclick=@(() => DeleteBook(book))>Remove</button>
+							</td>
+						</tr>
+					}
+				}
+			</tbody>
+		</table>
+	</div>
+	<div class="user-table">
+		<h4>On Loan</h4>
+		<table class="table table-striped">
+			<thead>
+				<tr>
+					<th>Name</th>
+					<th>Author</th>
+					<th>Quality</th>
+					<th>Cost</th>
+					<th></th>
+				</tr>
+			</thead>
+
+			<tbody>
+				@foreach (var book in bookList)
+				{
+					if (book.BookLentOut == 1)
+					{
+						<tr>
+							<td>@book.Name</td>
+							<td>@book.BookAuthor</td>
+							<td>@book.BookQuality</td>
+							<td>@book.BookCost</td>
+							<td>
+								<button class="btn btn-info" @onclick=@(() => LendBook(book))>Return</button>
+							</td>
+						</tr>
+					}
+				}
+			</tbody>
+		</table>
+	</div>
+}
+</div>
+
+@code {
+	/*
+	 * Creates a Enumerable list of customers, for displaying on the page
+	 */
+	private IEnumerable<BookInfo> bookList;
+	protected override async Task OnInitializedAsync()
+	{
+		bookList = await bookService.GetXAsync();
+	}
+		
+	/*
+	 * When the add book button is pressed, this will navigate the user to the add/update page
+	 */
+	public void AddNewBook()
+	{
+		navigationManager.NavigateTo($"addupdatebook");
+	}
+		
+	/*
+	 * When the edit button is pressed, the user will be navigated to the update page, 
+	 * with the specific book's id as a parameter
+	 * 
+	 * @param A book's info
+	 */
+	public void UpdateBook(BookInfo bookInfo)
+	{
+		navigationManager.NavigateTo($"updatebook/{bookInfo.Id}");
+	}
+		
+	/*
+	 * When the delete button is pressed, it will delete the customer from the list
+	 * 
+	 * @param A book's info
+	 */
+	public async void DeleteBook(BookInfo bookInfo)
+	{
+		await bookService.DeleteXAsync(bookInfo.Id);
+		bookList = await bookService.GetXAsync();
+		this.StateHasChanged();
+	}
+		
+	/*
+	* When the lend button is pressed, it will transfer the book entry from one table to the other.
+	* For example, if a book is lent out, it will be moved to the available list
+	*
+	* @param A book's info
+	*/
+	public async void LendBook(BookInfo bookInfo)
+	{
+		await bookService.LendBookAsync(bookInfo);
+		bookList = await bookService.GetXAsync();
+		this.StateHasChanged();
+	}
+
+}

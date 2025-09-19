@@ -1,0 +1,121 @@
+﻿@page "/addstaffupdate"
+@page "/updatestaff/{StaffId:int}"
+
+@using FinalOOProject.Services
+@using FinalOOProject.Data
+@inject StaffService staffService
+@inject NavigationManager navigatioManager
+
+<div id="built-page">
+	<h1>Add or Update Staff Record</h1>
+	<div class="col-md-12">
+		<div class="user-row">
+			<div class="user-column">
+				<div class="mb-3">
+					<label class="form-label">First Name:</label>
+					<input type="text" @bind="staffFname" class="form-control" placeholder="John" />
+				</div>
+				<div class="mb-3">
+					<label class="form-label">Last Name:</label>
+					<input type="text" @bind="staffLname" class="form-control" placeholder="Smith" />
+				</div>
+			</div>
+			<div class="user-column">
+				<div class="mb-3">
+					<label class="form-label">Staff Email:</label>
+					<input type="text" @bind="staffEmail" class="form-control" placeholder="j.smith@sample.com" />
+				</div>
+				<div class="mb-3">
+					<label class="form-label">Phone Number:</label>
+					<input type="text" @bind="number" class="form-control" placeholder="14033349855" />
+				</div>
+			</div>
+		</div>		
+		<div class="has-button">
+			<button type="submit" class="btn btn-primary user-button" @onclick="AddstaffInfo">Submit</button>
+			<button type="submit" class="btn btn-primary user-button" @onclick="BackToList">Back</button>
+		</div>
+	</div>
+</div>
+
+@code {
+	/*
+	 * Parameter for editing a specific staff member
+	 */
+	[Parameter]
+	public int StaffID { get; set; }
+
+	/*
+	 * Empty variables that are bound to the input boxes
+	 */
+	private string staffFname = "";
+	private string staffLname = "";
+	private int staffID = 0;
+	private string staffEmail = "";
+	private string number = "";
+
+	/*
+	 * Code that sets the boxes to the parameter's values
+	 * If the staffId is 0 (new staff member), then no boxes will be filled
+	 */
+	protected async override void OnInitialized()
+	{
+		base.OnInitialized();
+		staffID = StaffID;
+		if (staffID > 0)
+		{
+			var response = await staffService.GetXAsync(staffID);
+			staffFname = response.Name;
+			staffLname = response.StaffLname;
+			staffEmail = response.StaffEmail;
+			number = response.Number;
+			this.StateHasChanged();
+		}
+	}
+
+	/*
+	 * Creates a new staff member, or updates an existing one
+	 * Upon successful creation, it will display an alert notifying the user of success
+	 */
+	public async void AddstaffInfo()
+	{
+		var staff = new StaffInfo();
+		staff.Name = staffFname;
+		staff.StaffLname = staffLname;
+		staff.Id = staffID;
+		staff.StaffEmail = staffEmail;
+		staff.Number = number;
+		
+		if(DataValidator.CheckStaffEntry(staffFname, staffLname, number, staffEmail))
+		{
+			var response = await staffService.AddUpdateXAsync(staff);
+			if (response)
+			{
+				if (staffID == 0)
+				{
+					await App.Current.MainPage.DisplayAlert("Saved", "Save Success", "OK");
+					BackToList();
+				}
+				else
+				{
+					await App.Current.MainPage.DisplayAlert("Updated", "Update Success", "OK");
+					BackToList();
+				}
+			}
+			else
+			{
+				await App.Current.MainPage.DisplayAlert("Saved", "Save File", "OK");
+				BackToList();
+
+			}	
+		}
+	}
+
+	/*
+	 * Redirects the current page to the list page, once a staff member is added or removed
+	 */
+	public void BackToList()
+	{
+		navigatioManager.NavigateTo("stafflist");
+	}
+}

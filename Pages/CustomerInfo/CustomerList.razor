@@ -1,0 +1,99 @@
+﻿@page "/customerlist"
+
+@using FinalOOProject.Services
+@using FinalOOProject.Data
+@inject CustomerService customerService
+@inject NavigationManager navigationManager
+<div id="built-page">
+<h1>Customer List</h1>
+
+@if (customerList == null)
+{
+	<p><em>Loading...</em></p>
+}
+else
+{
+	<button class="btn btn-primary user-button" @onclick="AddNewCustomer">Add New Customer</button>
+		<table class="table table-striped user-table">
+			<thead>
+				<tr>
+					<th>Name</th>
+					<th>Email</th>
+					<th>Phone Number</th>
+					<th></th>
+				</tr>
+			</thead>
+			<tbody>
+				@foreach (var customer in customerList)
+				{
+					<tr>
+						<td>@customer.Name</td>
+						<td>@customer.EmailAddress</td>
+						<td>@customer.PhoneNumber</td>
+						<td>
+							<button class="btn btn-info" @onclick=@(() => ViewDetails(customer))>Details</button>
+							<button class="btn btn-warning" @onclick=@(() => UpdateCustomer(customer))>Update</button>
+							<button class="btn btn-danger" @onclick=@(() => DeleteCustomer(customer))>Delete</button>
+						</td>
+					</tr>
+				}
+			</tbody>
+		</table>
+}
+</div>
+
+@code {
+	/*
+	 * Creates a Enumerable list of customers, for displaying on the page
+	 */
+	private IEnumerable<CustomerInfo> customerList;
+	protected override async Task OnInitializedAsync()
+	{
+		customerList = await customerService.GetXAsync();
+	}
+
+	/*
+	 * When the add customer button is pressed, this will navigate the user to the add/update page
+	 */
+	public void AddNewCustomer()
+	{
+		navigationManager.NavigateTo("addupdatecustomer");
+	}
+
+	/*
+	 * When the edit button is pressed, the user will be navigated to the update page, 
+	 * with the specific customer's number as a parameter
+	 * 
+	 * @param A customer's info
+	 */
+	public void UpdateCustomer(CustomerInfo customerInfo)
+	{
+		navigationManager.NavigateTo($"updatecustomer/{customerInfo.Id}");
+	}
+		
+	/*
+	 * When the delete button is pressed, it will delete the customer from the list
+	 * 
+	 * @param A customer's info
+	 */
+	public async void DeleteCustomer(CustomerInfo customerInfo)
+	{
+		await customerService.DeleteXAsync(customerInfo.Id);
+		customerList = await customerService.GetXAsync();
+		this.StateHasChanged();
+	}
+		
+	/*
+	* Allows you to see all of the customer's info in alert form.
+	*
+	* @param A customer's info
+	*/
+	public void ViewDetails(CustomerInfo customer)
+	{
+		string customerInfo = $"Id Number: {customer.Id}\n\n{customer.Address}  {customer.City}, {customer.State}" +
+		$"\n{customer.ZipCode}\n{customer.Country}" +
+		$"\n\n{customer.PhoneNumber}\n\n{customer.EmailAddress}";
+
+		App.Current.MainPage.DisplayAlert($"{customer.Name}", customerInfo, "Ok");
+	}
+}

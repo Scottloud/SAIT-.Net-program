@@ -1,0 +1,153 @@
+﻿@page "/addupdatecustomer"
+@page "/updatecustomer/{Id:int}"
+
+@using FinalOOProject.Services
+@using FinalOOProject.Data
+
+@inject CustomerService customerService
+@inject NavigationManager navigationManager
+
+<div id="built-page">
+	<h1>Add or Update Customers</h1>
+	<div class="col-md-12">
+		<div class="user-row">
+			<div class="user-column">
+				<div class="mb-3">
+					<label class="form-label">Name:</label>
+					<input type="text" @bind="name" class="form-control" placeholder="John Smith" />
+				</div>
+				<div class="mb-3">
+					<label class="form-label">City:</label>
+					<input type="text" @bind="city" class="form-control" placeholder="Calgary" />
+				</div>
+
+				<div class="mb-3">
+					<label class="form-label">Country:</label>
+					<input type="text" @bind="country" class="form-control" placeholder="Canada" />
+				</div>
+				<div class="mb-3">
+					<label class="form-label">Email:</label>
+					<input type="text" @bind="email" class="form-control" placeholder="j.smith@sample.com" />
+				</div>
+			</div>
+			<div class="user-column">
+				<div class="mb-3">
+					<label class="form-label">Address:</label>
+					<input type="text" @bind="address" class="form-control" placeholder="123 Main St" />
+				</div>
+
+				<div class="mb-3">
+					<label class="form-label">Province:</label>
+					<input type="text" @bind="state" class="form-control" placeholder="AB" />
+				</div>
+
+				<div class="mb-3">
+					<label class="form-label">Postal Code:</label>
+					<input type="text" @bind="zip_code" class="form-control" placeholder="T1X 1R5" />
+				</div>
+
+				<div class="mb-3">
+					<label class="form-label">Phone Number:</label>
+					<input type="text" @bind="phone_number" class="form-control" placeholder="14039999221" />
+				</div>
+			</div>
+		</div>	
+		<div class="user-row has-button">
+			<button type="submit" class="btn btn-primary user-button" @onclick="AddCustomerInfo">Submit</button>
+			<button type="submit" class="btn btn-primary user-button" @onclick="BackToList">Back</button>
+		</div>
+	</div>		
+
+</div>
+@code {
+	/*
+	 * Parameter for editing a specific customer
+	 */
+	[Parameter]
+	public int Id { get; set; }
+
+	/*
+	 * Empty variables that are bound to the input boxes
+	 */
+	private int customerNum = 0;
+	private string name = "";
+	private string city = "";
+	private string address = "";
+	private string state = "";
+	private string country = "";
+	private string zip_code = "";
+	private string email = "";
+	private string phone_number = "";
+
+	/*
+	 * Code that sets the boxes to the parameter's values
+	 * If the customerNum is 0 (new customer), then no boxes will be filled
+	 */
+	protected async override void OnInitialized()
+	{
+		base.OnInitialized();
+		customerNum = Id;
+		if (customerNum > 0)
+		{
+			var response = await customerService.GetXAsync(customerNum);
+			name = response.Name;
+			address = response.Address;
+			city = response.City;
+			state = response.State;
+			country = response.Country;
+			zip_code = response.ZipCode;
+			email = response.EmailAddress;
+			phone_number = response.PhoneNumber;
+			this.StateHasChanged();
+		}
+	}
+
+	/*
+	 * Creates a new customer, or updates an existing one
+	 * Upon successful creation, it will display an alert notifying the user of success
+	 */
+	public async void AddCustomerInfo()
+	{
+		var customer = new CustomerInfo();
+		customer.Id = customerNum;
+		customer.Name = name;
+		customer.City = city;
+		customer.Address = address;
+		customer.State = state;
+		customer.Country = country;
+		customer.ZipCode = zip_code;
+		customer.EmailAddress = email;
+		customer.PhoneNumber = phone_number;
+
+		if (DataValidator.CheckCustomerEntry(name, city, address, state, country, zip_code, email, phone_number))
+		{
+			var response = await customerService.AddUpdateXAsync(customer);
+			if (response)
+			{
+				if (customerNum == 0)
+				{
+					await App.Current.MainPage.DisplayAlert("Saved", "Save Successful", "OK");
+					BackToList();
+				}
+				else
+				{
+					await App.Current.MainPage.DisplayAlert("Updated", "Update Successful", "OK");
+					BackToList();
+				}
+			}
+			else
+			{
+				await App.Current.MainPage.DisplayAlert("Saved", "Save File", "OK");
+				BackToList();
+			}
+		}
+	}
+
+	/*
+	 * Redirects the current page to the list page, once a customer is added or removed
+	 */
+	public void BackToList()
+	{
+		navigationManager.NavigateTo("customerlist");
+	}
+}
